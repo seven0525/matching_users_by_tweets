@@ -4,19 +4,23 @@
 # In[ ]:
 
 
-#!//usr/bin/env/python
+# !//usr/bin/env/python
 
 # -*- coding:utf-8 -*-
 import sys, json, time, calendar, re
 import urllib
 import collections as cl
 import codecs
-from os.path import join, dirname, abspath
+from os.path import join, dirname, abspath, exists
 from datetime import datetime
 from twitter import Twitter, OAuth
 from watson_developer_cloud import PersonalityInsightsV3
 from requests_oauthlib import OAuth1Session
 import config
+
+
+# In[ ]:
+
 
 # Twitter API 初期設定
 CK = config.get_consumer_key()
@@ -37,7 +41,7 @@ def get_user_tweets(screen_name):
     max_id = ''
     tweets = []
     a_timeline = twitter.statuses.user_timeline(screen_name=screen_name, count=count, include_rts='false', tweet_mode='extended')
-    # 取得件数を設定
+    # 取得件数500
     while number_of_tweets <= 500:
         for tweet in a_timeline:
             number_of_tweets += 1
@@ -65,7 +69,8 @@ def get_shaped_tweets(tweets_list):
     return shaped_tweets
 
 # P.I.に突っ込む体裁を整えてjson形式"tweets.json"に
-def tweets_trans_json(tweets_list):
+def tweets_trans_json(tweets_list, user):
+    file_name = 'tweets-' + user +'.json'
     tweets_json = {}
     tweets_json['contentItems'] = []
     for tweet in tweets_list:
@@ -74,31 +79,52 @@ def tweets_trans_json(tweets_list):
         data['contenttype'] = 'text/plain'
         data['language'] = 'ja'
         tweets_json['contentItems'].append(data)
-    fw = codecs.open('tweets.json', 'w', 'utf-8')
-    json.dump(tweets_json, fw, indent=4 ,ensure_ascii=False)
-    fw.close()
-    print('tweets.jsonが生成されました')
+    with codecs.open(file_name, 'w', 'utf-8') as fw:
+        json.dump(tweets_json, fw, indent=4 ,ensure_ascii=False)
+    print(file_name + 'が生成されました')
 
 # 生成したtweets.jsonをもとにWatsonAPI呼び出し
-def call_insights():
-    with open(join(dirname(abspath('__file__')), 'tweets.json'), encoding='utf-8_sig') as profile_json:
+def get_insights_analytics(user):
+    in_file_name = 'tweets-' + user + '.json'
+    ex_file_name = 'analyzed-' + user + '.json'
+    with open(join(dirname(abspath('__file__')), in_file_name), encoding='utf-8_sig') as tweets_json:
         profile = personality_insights.profile(
-            profile_json.read(),
+            tweets_json.read(),
             content_type='application/json',
-            raw_scores=True, consumption_preferences=True)
-        fw = codecs.open('analyzed.json', 'w', 'utf-8')
-        json.dump(profile, fw, indent=2)
-        fw.close()
-        print('analyzed.jsonが生成されました')
-    
-user_id = str(input('あなたのTwitter IDは？: '))
-#target_id = str(input('どのTwitter IDとの相性を診断しますか？: '))
+            raw_scores=True,
+            consumption_preferences=True
+        )
+        with codecs.open(ex_file_name, 'w', 'utf-8') as fw:
+            json.dump(profile, fw, indent=2)
+        print(ex_file_name + 'が生成されました')
 
-shaped_user_tweets = get_shaped_tweets(get_user_tweets(user_id))
-#shaped_target_tweets = get_shaped_tweets(get_user_tweets(target_id))
+# big5 の成分だけ抽出
+def get_big5(user):
+    file_name = 'analyzed-' + user + '.json'
+    with open(join(dirname(abspath('__file__')), file_name), 'r') as analyzed_json:
+        json_data = json.load(analyzed_json)
+        big5 = []
+        for data in json_data['personality']:
+            rm_key = ['trait_id', 'category', 'significant', 'children']
+            data = {key: data[key] for key in data if key not in rm_key}
+            big5.append(data)
+    return big5
 
-print('取得ツイート数: ', len(shaped_user_tweets))
-    
-tweets_trans_json(shaped_user_tweets)
-call_insights()
+users = []   
+users.append(input('あなたのTwitter IDは？: '))
+users.append(input('どのTwitter IDとの相性を診断しますか？: '))
+print(users)
+
+
+for user in users:
+    file_name = 'big5-' + user + '.json'
+    shaped_user_tweets = get_shaped_tweets(get_user_tweets(user))
+    tweets_trans_json(shaped_user_tweets, user)
+    if exists('./' + file_name)  == False:
+        get_insights_analytics(user)
+        with codecs.open(file_name, 'w', 'utf-8') as fw:
+            json.dump(get_big5(user), fw, indent=2)
+    print(get_big5(user))
+
+# print('取得ツイート数: ', len(shaped_user_tweets))
 
