@@ -121,9 +121,9 @@ for user in users:
     shaped_user_tweets = get_shaped_tweets(get_user_tweets(user))
     tweets_trans_json(shaped_user_tweets, user)
     if exists('./' + file_name)  == False:
-#     get_insights_analytics(user)
-#     with codecs.open(file_name, 'w', 'utf-8') as fw:
-#         json.dump(get_big5(user), fw, indent=2)
+        get_insights_analytics(user)
+        with codecs.open(file_name, 'w', 'utf-8') as fw:
+            json.dump(get_big5(user), fw, indent=2)
     print(get_big5(user))
 
 # print('取得ツイート数: ', len(shaped_user_tweets))
@@ -144,19 +144,23 @@ for user in users:
     with open('./' + file_name, 'r') as fr:
         data_list = json.load(fr)
         for data in data_list:
-            shaped_data[data['name']] = data['raw_score'] 
+            shaped_data[data['name']] = data['percentile'] 
     user_and_big5[user] = shaped_data 
     
 # big5の生の値の差を取り出す
 def get_big5_diff(data):
-    open_diff = data[users[0]]['Openness'] - data[users[1]]['Openness']
-    cons_diff = data[users[0]]['Conscientiousness'] - data[users[1]]['Conscientiousness']
-    print(open_diff)
-    print(cons_diff)
+    diffs = {}
+    for status in data[users[0]].keys():
+        diffs[status] = abs(data[users[0]][status] - data[users[1]][status])
+    return diffs
 
-            
-            
+# big5の差をわかりやすい数値に
+def diff_trans_percent(data):
+    diff_percents = {}
+    for status in data.keys():
+        diff_percents[status] = str(100 - round(data[status] * 100)) + '%'
+    return diff_percents
 
-print(user_and_big5)
-get_big5_diff(user_and_big5)
+diff = get_big5_diff(user_and_big5)
+print(diff_trans_percent(diff))
 
