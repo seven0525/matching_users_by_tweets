@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 # !//usr/bin/env/python
@@ -19,7 +19,7 @@ from requests_oauthlib import OAuth1Session
 import config
 
 
-# In[ ]:
+# In[3]:
 
 
 # Twitter API 初期設定
@@ -34,7 +34,7 @@ UN = config.get_username()
 PS = config.get_password()
 personality_insights = PersonalityInsightsV3(version='2017-10-13', username=UN, password=PS)
 
-
+# APIからツイートを取ってくる
 def get_user_tweets(screen_name):
     number_of_tweets = 0
     count = 200
@@ -69,7 +69,7 @@ def get_shaped_tweets(tweets_list):
     return shaped_tweets
 
 # P.I.に突っ込む体裁を整えてjson形式"tweets.json"に
-def tweets_trans_json(tweets_list, user):
+def tweets_conv_json(tweets_list, user):
     file_name = 'tweets-' + user +'.json'
     tweets_json = {}
     tweets_json['contentItems'] = []
@@ -98,56 +98,17 @@ def get_insights_analytics(user):
             json.dump(profile, fw, indent=2)
         print(ex_file_name + 'が生成されました')
 
-# big5 の成分だけ抽出
+# big5のpercentileだけ抽出
 def get_big5(user):
     file_name = 'analyzed-' + user + '.json'
     with open(join(dirname(abspath('__file__')), file_name), 'r') as analyzed_json:
         json_data = json.load(analyzed_json)
-        big5 = []
+        big5 = {}
         for data in json_data['personality']:
-            rm_key = ['trait_id', 'category', 'significant', 'children']
-            data = {key: data[key] for key in data if key not in rm_key}
-            big5.append(data)
+            big5[data['name']] = data['percentile']
     return big5
 
-users = []   
-users.append(input('あなたのTwitter IDは？: '))
-users.append(input('どのTwitter IDとの相性を診断しますか？: '))
-print(users)
-
-
-for user in users:
-    file_name = 'big5-' + user + '.json'
-    shaped_user_tweets = get_shaped_tweets(get_user_tweets(user))
-    tweets_trans_json(shaped_user_tweets, user)
-    if exists('./' + file_name)  == False:
-        get_insights_analytics(user)
-        with codecs.open(file_name, 'w', 'utf-8') as fw:
-            json.dump(get_big5(user), fw, indent=2)
-    print(get_big5(user))
-
-# print('取得ツイート数: ', len(shaped_user_tweets))
-
-
-# 以下、上記で受け取ったbig5\-\[user\].jsonに関して操作を行う(P.I.の使用回数の節約のため)
-
-# In[ ]:
-
-
-users = ['fu_wo_msk', 'mi_so_ka']
-user_and_big5 = {}
-
-# big5データ整形(後ほど上の項に組み込む)
-for user in users:
-    file_name = 'big5-' + user +'.json'
-    shaped_data = {}
-    with open('./' + file_name, 'r') as fr:
-        data_list = json.load(fr)
-        for data in data_list:
-            shaped_data[data['name']] = data['percentile'] 
-    user_and_big5[user] = shaped_data 
-    
-# big5の生の値の差を取り出す
+# big5の差を取り出す
 def get_big5_diff(data):
     diffs = {}
     for status in data[users[0]].keys():
@@ -155,12 +116,34 @@ def get_big5_diff(data):
     return diffs
 
 # big5の差をわかりやすい数値に
-def diff_trans_percent(data):
+def diff_conv_percent(data):
     diff_percents = {}
     for status in data.keys():
-        diff_percents[status] = str(100 - round(data[status] * 100)) + '%'
+        diff_percents[status] = str(round(100 - data[status] * 100)) + '%'
     return diff_percents
 
-diff = get_big5_diff(user_and_big5)
-print(diff_trans_percent(diff))
+# メイン処理部分(API使用回数をケチる処理込み)
+
+users = []
+users.append(input('あなたのTwitter IDは？: '))
+users.append(input('どのTwitter IDとの相性を診断しますか？: '))
+print(users)
+
+big5 = {}
+for user in users:
+    if exists(join(dirname(abspath('__file__')) , 'tweets-' + user + '.json')) == False:
+        tweets = get_user_tweets(user)
+        tweets = get_shaped_tweets(tweets)
+        tweets_conv_json(tweets, user)
+    else:
+        print('tweets-' + user + '.jsonが存在します。既存のファイルで処理を続行します。')
+    
+    if exists(join(dirname(abspath('__file__')) , 'analyzed-' + user + '.json')) == False:
+        get_insights_analytics(user)
+    else:
+        print('analyzed-' + user + '.jsonが存在します。既存のファイルで処理を続行します。')
+    big5[user] = get_big5(user)
+    
+big5_diff = get_big5_diff(big5)
+print(diff_conv_percent(big5_diff))
 
