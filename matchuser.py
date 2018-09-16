@@ -1,26 +1,12 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-# In[1]:
-
-
-# !//usr/bin/env/python
-
-# -*- coding:utf-8 -*-
 import sys, json, time, calendar, re
-import urllib
 import collections as cl
 import codecs
 from os.path import join, dirname, abspath, exists
-from datetime import datetime
 from twitter import Twitter, OAuth
 from watson_developer_cloud import PersonalityInsightsV3
-from requests_oauthlib import OAuth1Session
 import config
-
-
-# In[3]:
-
 
 # Twitter API 初期設定
 CK = config.get_consumer_key()
@@ -34,13 +20,39 @@ UN = config.get_username()
 PS = config.get_password()
 personality_insights = PersonalityInsightsV3(version='2017-10-13', username=UN, password=PS)
 
+# jsonファイル格納場所、名前定義
+json_folder = join(dirname(abspath('__file__')), 'tmp/')
+
+def get_file_name(type, user):
+    if type == 'tw':
+        return 'tweets-' + user + '.json'
+    elif type == 'an':
+        return 'analyzed-' + user + 'json'
+    else:
+        try:
+            raise ValueError("ファイル形式は tw/an で指定してください")
+        except ValueError as e:
+            print(e)
+
+# ユーザー定義
+users = []
+# users.append(input('あなたのTwitter IDは？: '))
+# users.append(input('どのTwitter IDとの相性を診断しますか？: '))
+users.append('fu_wo_msk')
+users.append('mi_so_ka')
+
 # APIからツイートを取ってくる
 def get_user_tweets(screen_name):
     number_of_tweets = 0
     count = 200
     max_id = ''
     tweets = []
-    a_timeline = twitter.statuses.user_timeline(screen_name=screen_name, count=count, include_rts='false', tweet_mode='extended')
+    a_timeline = twitter.statuses.user_timeline(
+        screen_name=screen_name,
+        count=count,
+        include_rts='false',
+        tweet_mode='extended'
+    )
     # 取得件数500
     while number_of_tweets <= 500:
         for tweet in a_timeline:
@@ -51,7 +63,13 @@ def get_user_tweets(screen_name):
         if tweets[-1] == tweets[-2]:
             del tweets[-1]
             break
-        a_timeline = twitter.statuses.user_timeline(screen_name=screen_name, count=count, max_id=max_id, include_rts='false', tweet_mode='extended')
+        a_timeline = twitter.statuses.user_timeline(
+            screen_name=screen_name,
+            count=count,
+            max_id=max_id,
+            include_rts='false',
+            tweet_mode='extended'
+        )
     return tweets
 
 # 余計な文字を省く・実体参照を文字に戻す
@@ -70,7 +88,6 @@ def get_shaped_tweets(tweets_list):
 
 # P.I.に突っ込む体裁を整えてjson形式"tweets.json"に
 def tweets_conv_json(tweets_list, user):
-    file_name = 'tweets-' + user +'.json'
     tweets_json = {}
     tweets_json['contentItems'] = []
     for tweet in tweets_list:
@@ -79,29 +96,26 @@ def tweets_conv_json(tweets_list, user):
         data['contenttype'] = 'text/plain'
         data['language'] = 'ja'
         tweets_json['contentItems'].append(data)
-    with codecs.open(file_name, 'w', 'utf-8') as fw:
+    with codecs.open(join(json_folder, get_file_name('tw', user)), 'w', 'utf-8') as fw:
         json.dump(tweets_json, fw, indent=4 ,ensure_ascii=False)
-    print(file_name + 'が生成されました')
+    print(get_file_name('tw', user) + 'が生成されました')
 
 # 生成したtweets.jsonをもとにWatsonAPI呼び出し
 def get_insights_analytics(user):
-    in_file_name = 'tweets-' + user + '.json'
-    ex_file_name = 'analyzed-' + user + '.json'
-    with open(join(dirname(abspath('__file__')), in_file_name), encoding='utf-8_sig') as tweets_json:
+    with open(join(json_folder, get_file_name('tw', user)), encoding='utf-8_sig') as tweets_json:
         profile = personality_insights.profile(
             tweets_json.read(),
             content_type='application/json',
             raw_scores=True,
             consumption_preferences=True
         )
-        with codecs.open(ex_file_name, 'w', 'utf-8') as fw:
+        with open(join(json_folder, get_file_name('an', user)), 'w') as fw:
             json.dump(profile, fw, indent=2)
-        print(ex_file_name + 'が生成されました')
+        print(get_file_name('an', user) + 'が生成されました')
 
 # big5のpercentileだけ抽出
 def get_big5(user):
-    file_name = 'analyzed-' + user + '.json'
-    with open(join(dirname(abspath('__file__')), file_name), 'r') as analyzed_json:
+    with open(join(json_folder, get_file_name('an', user)), 'r') as analyzed_json:
         json_data = json.load(analyzed_json)
         big5 = {}
         for data in json_data['personality']:
@@ -109,7 +123,7 @@ def get_big5(user):
     return big5
 
 # big5の差を取り出す
-def get_big5_diff(data):
+def get_big5_diff(data, users):
     diffs = {}
     for status in data[users[0]].keys():
         diffs[status] = abs(data[users[0]][status] - data[users[1]][status])
@@ -122,28 +136,21 @@ def diff_conv_percent(data):
         diff_percents[status] = str(round(100 - data[status] * 100)) + '%'
     return diff_percents
 
-# メイン処理部分(API使用回数をケチる処理込み)
-
-users = []
-users.append(input('あなたのTwitter IDは？: '))
-users.append(input('どのTwitter IDとの相性を診断しますか？: '))
-print(users)
-
+# メイン処理
 big5 = {}
 for user in users:
-    if exists(join(dirname(abspath('__file__')) , 'tweets-' + user + '.json')) == False:
+    if exists(join(json_folder, get_file_name('tw', user))) == False:
         tweets = get_user_tweets(user)
         tweets = get_shaped_tweets(tweets)
         tweets_conv_json(tweets, user)
     else:
-        print('tweets-' + user + '.jsonが存在します。既存のファイルで処理を続行します。')
-    
-    if exists(join(dirname(abspath('__file__')) , 'analyzed-' + user + '.json')) == False:
+        print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
+
+    if exists(join(json_folder, get_file_name('an', user))) == False:
         get_insights_analytics(user)
     else:
-        print('analyzed-' + user + '.jsonが存在します。既存のファイルで処理を続行します。')
+        print(get_file_name('an', user) + 'が存在します。既存のファイルで処理を続行します。')
     big5[user] = get_big5(user)
-    
-big5_diff = get_big5_diff(big5)
-print(diff_conv_percent(big5_diff))
 
+big5_diff = get_big5_diff(big5, users)
+big5_result = diff_conv_percent(big5_diff)
