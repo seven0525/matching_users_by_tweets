@@ -36,6 +36,8 @@ def get_file_name(type, user):
 
 # ユーザー定義
 users = []
+users.append(input('あなたのTwitterID: '))
+users.append(input('診断したい相手のTwitterID: '))
 
 # APIからツイートを取ってくる
 def get_user_tweets(screen_name):
@@ -133,21 +135,22 @@ def diff_conv_percent(data):
     return diff_percents
 
 # メイン処理
-def display_result():
-    big5 = {}
-    for user in users:
-        if exists(join(json_folder, get_file_name('tw', user))) == False:
-            tweets = get_user_tweets(user)
-            tweets = get_shaped_tweets(tweets)
-            tweets_conv_json(tweets, user)
-        else:
-            print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
+big5 = {}
+for user in users:
+    if exists(join(json_folder, get_file_name('tw', user))) == False:
+        tweets = get_user_tweets(user)
+        tweets = get_shaped_tweets(tweets)
+        tweets_conv_json(tweets, user)
+    else:
+        print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
 
-        if exists(join(json_folder, get_file_name('an', user))) == False:
-            get_insights_analytics(user)
-        else:
-            print(get_file_name('an', user) + 'が存在します。既存のファイルで処理を続行します。')
-        big5[user] = get_big5(user)
+    if exists(join(json_folder, get_file_name('an', user))) == False:
+        get_insights_analytics(user)
+    else:
+        print(get_file_name('an', user) + 'が存在します。既存のファイルで処理を続行します。')
+    big5[user] = get_big5(user)
 
-    big5_diff = get_big5_diff(big5, users)
-    big5_result = diff_conv_percent(big5_diff)
+big5_diff = get_big5_diff(big5, users)
+big5_result = diff_conv_percent(big5_diff)
+
+print(big5_result)
