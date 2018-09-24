@@ -3,6 +3,7 @@
 import sys, json, re
 import collections as cl
 import codecs
+from os import mkdir
 from os.path import join, dirname, abspath, exists
 from twitter import Twitter, OAuth
 from watson_developer_cloud import PersonalityInsightsV3
@@ -20,8 +21,10 @@ UN = config.get_username()
 PS = config.get_password()
 personality_insights = PersonalityInsightsV3(version='2017-10-13', username=UN, password=PS)
 
-# jsonファイル格納場所、名前定義
+# jsonファイル格納場所
 json_folder = join(dirname(abspath('__file__')), 'tmp/')
+if not exists(json_folder):
+    mkdir(json_folder)
 
 def get_file_name(type, user):
     if type == 'tw':

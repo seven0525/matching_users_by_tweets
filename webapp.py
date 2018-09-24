@@ -20,6 +20,7 @@ def add_user():
 
     matchuser.users.append(user_name)
     matchuser.users.append(target_name)
+    print(matchuser.users)
     return redirect('/')
 
 if __name__ == "__main__":
