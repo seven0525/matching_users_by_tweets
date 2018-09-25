@@ -122,7 +122,7 @@ def get_big5_diff(data, users):
 def diff_conv_percent(data):
     diff_percents = {}
     for status in data.keys():
-        diff_percents[status] = str(round(100 - data[status] * 100)) + '%'
+        diff_percents[status] = round(100 - data[status] * 100)
     return diff_percents
 
 # jsonファイル名を返す
@@ -143,8 +143,8 @@ def show_toppage():
     return render_template('index.html')
 
 
-@app.route('/adduser', methods=['POST'])
-def add_user():
+@app.route('/result', methods=['GET', 'POST'])
+def show_result():
     # ユーザー定義
     users = []
     user_name = request.form['user_name']
@@ -174,7 +174,17 @@ def add_user():
 
     big5_diff = get_big5_diff(big5, users)
     big5_result = diff_conv_percent(big5_diff)
-    return str(big5_result)
+
+    # グラフにデータを渡す
+    labels = []
+    values = []
+    for label, value in big5_result.items():
+        labels.append(label)
+        values.append(value)
+
+    print(labels)
+    print(values)
+    return render_template('result.html', values=values, labels=labels)
 
 if __name__ == "__main__":
     app.run(debug=True)
