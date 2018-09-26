@@ -13,14 +13,17 @@
 <body>
   <header class="header">
     <div class="header__logo">
-      <h1 class="logo__title"><i class="fab fa-twitter-square"></i> Twitter相性診断</h1>
+      <a class="logo__link link" href="index.html">
+        <h1 class="logo__title"><i class="fab fa-twitter-square"></i> Twitter相性診断</h1>
+      </a>
     </div>
   </header>
   <main class="main">
     <div class="result">
-      <canvas class="result__graph" id="myChart" width="600" height="400">
-      </canvas>
+      <canvas class="result__graph" id="myChart" width="600" height="400"></canvas>
+      <p class="result__text text">総合的な性格適合度は<span class="text text--strong">{{avg}}%</span>です</p>
     </div>
+    <a href="index.html" >トップに戻る</a>
   </main>
   <script>
     // bar chart data
@@ -44,7 +47,17 @@
     var mychart = document.getElementById("myChart");
     new Chart(mychart, {
       type: 'radar',
-      data: barData
+      data: barData,
+      options: {
+        scale: {
+          ticks: {
+            stepSize: 10,
+            beginAtZero: true,
+            min: 0,
+            max: 100,
+          }
+        }
+      }
     });
   </script>
 </body>

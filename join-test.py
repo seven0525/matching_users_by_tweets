@@ -30,6 +30,18 @@ json_folder = join(dirname(abspath('__file__')), 'tmp/')
 if not exists(json_folder):
     mkdir(json_folder)
 
+# jsonファイル名を返す
+def get_file_name(type, user_name):
+    if type == 'tw':
+        return 'tweets-' + user_name + '.json'
+    elif type == 'an':
+        return 'analyzed-' + user_name + 'json'
+    else:
+        try:
+            raise ValueError("ファイル形式は tw/an で指定してください")
+        except ValueError as e:
+            print(e)
+
 # APIからツイートを取ってくる
 def get_user_tweets(screen_name):
     number_of_tweets = 0
@@ -76,7 +88,7 @@ def get_shaped_tweets(tweets_list):
     return shaped_tweets
 
 # P.I.に突っ込む体裁を整えてjson形式"tweets.json"に
-def tweets_conv_json(tweets_list, user):
+def tweets_conv_json(tweets_list, user_name):
     tweets_json = {}
     tweets_json['contentItems'] = []
     for tweet in tweets_list:
@@ -85,13 +97,13 @@ def tweets_conv_json(tweets_list, user):
         data['contenttype'] = 'text/plain'
         data['language'] = 'ja'
         tweets_json['contentItems'].append(data)
-    with codecs.open(join(json_folder, get_file_name('tw', user)), 'w', 'utf-8') as fw:
+    with codecs.open(join(json_folder, get_file_name('tw', user_name)), 'w', 'utf-8') as fw:
         json.dump(tweets_json, fw, indent=4 ,ensure_ascii=False)
     print(get_file_name('tw', user) + 'が生成されました')
 
 # 生成したtweets.jsonをもとにWatsonAPI呼び出し
-def get_insights_analytics(user):
-    with open(join(json_folder, get_file_name('tw', user)), encoding='utf-8_sig') as tweets_json:
+def get_insights_analytics(user_name):
+    with open(join(json_folder, get_file_name('tw', user_name)), encoding='utf-8_sig') as tweets_json:
         profile = personality_insights.profile(
             tweets_json.read(),
             content_type='application/json',
@@ -100,11 +112,11 @@ def get_insights_analytics(user):
         )
         with open(join(json_folder, get_file_name('an', user)), 'w') as fw:
             json.dump(profile, fw, indent=2)
-        print(get_file_name('an', user) + 'が生成されました')
+        print(get_file_name('an', user_name) + 'が生成されました')
 
 # big5のpercentileだけ抽出
-def get_big5(user):
-    with open(join(json_folder, get_file_name('an', user)), 'r') as analyzed_json:
+def get_big5(user_name):
+    with open(join(json_folder, get_file_name('an', user_name)), 'r') as analyzed_json:
         json_data = json.load(analyzed_json)
         big5 = {}
         for data in json_data['personality']:
@@ -112,36 +124,31 @@ def get_big5(user):
     return big5
 
 # big5の差を取り出す
-def get_big5_diff(data, users):
+def get_big5_diff(data, users_list):
     diffs = {}
-    for status in data[users[0]].keys():
-        diffs[status] = abs(data[users[0]][status] - data[users[1]][status])
+    for status in data[users_list[0]].keys():
+        diffs[status] = abs(data[users_list[0]][status] - data[users_list[1]][status])
     return diffs
 
-# big5の差をわかりやすい数値に
-def diff_conv_percent(data):
+# big5の差をパーセンテージに変換
+def get_diff_percent(data):
     diff_percents = {}
     for status in data.keys():
         diff_percents[status] = round(100 - data[status] * 100)
     return diff_percents
 
-# jsonファイル名を返す
-def get_file_name(type, user):
-    if type == 'tw':
-        return 'tweets-' + user + '.json'
-    elif type == 'an':
-        return 'analyzed-' + user + 'json'
-    else:
-        try:
-            raise ValueError("ファイル形式は tw/an で指定してください")
-        except ValueError as e:
-            print(e)
+# big5の差の平均値を出す
+def get_diff_avg(data):
+    sum = 0
+    for diff in data.values():
+        sum += diff
+    diff_avg = round(sum / len(data))
+    return diff_avg
 
 # メイン処理
 @app.route('/')
 def show_toppage():
     return render_template('index.html')
-
 
 @app.route('/result', methods=['GET', 'POST'])
 def show_result():
@@ -173,18 +180,19 @@ def show_result():
         big5[user] = get_big5(user)
 
     big5_diff = get_big5_diff(big5, users)
-    big5_result = diff_conv_percent(big5_diff)
+    big5_diff_percent= get_diff_percent(big5_diff)
+    big5_diff_avg = get_diff_avg(big5_diff_percent)
 
     # グラフにデータを渡す
     labels = []
     values = []
-    for label, value in big5_result.items():
+    for label, value in big5_diff_percent.items():
         labels.append(label)
         values.append(value)
 
     print(labels)
     print(values)
-    return render_template('result.html', values=values, labels=labels)
+    return render_template('result.html', values=values, labels=labels, avg=big5_diff_avg)
 
 if __name__ == "__main__":
     app.run(debug=True)
