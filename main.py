@@ -160,7 +160,6 @@ def show_result():
     if not user_name or not target_name:
         error = 'IDが未記入です。2つとも入力してください。'
         return render_template('index.html', error=error)
-
     users.append(user_name)
     users.append(target_name)
 
@@ -196,7 +195,6 @@ def show_result():
         labels.append(label)
         values.append(value)
 
-    print(labels)
     return render_template('result.html', values=values, labels=ja_labels, avg=big5_diff_avg)
 
 if __name__ == "__main__":
