@@ -5,35 +5,37 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>test page</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" href="styles.css">
+  <link rel="stylesheet" type="text/css" href="static/bootstrap.css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 </head>
 <body>
-  <header class="header">
+  <header class="header container text-center mb-3">
     <div class="header__logo">
-      <a class="logo__link link" href="index.html">
-        <h1 class="logo__title"><i class="fab fa-twitter-square"></i> Twitter相性診断</h1>
-      </a>
-      <div class="logo__text text">
-        <p><a class="link" href="https://www.ibm.com/watson/jp-ja/developercloud/personality-insights.html">IBM Watson Personality Insights</a>を用いて、Twitterを分析</p>
-        <p>分析したお互いの診断結果から、性格においての5つの要素「Big5」の一致度を割り出します</p>
+      <h1 class="logo__title">
+        <a class="logo__link link" href="/"><i class="fab fa-twitter-square"></i> Twitter相性診断</a>
+      </h1>
+      <div class="logo__text text-left text-md-center">
+        <p class="mb-1"><a class="link" href="https://www.ibm.com/watson/jp-ja/developercloud/personality-insights.html">IBM Watson Personality Insights</a>を用いて2人のツイートを分析</p>
+        <p class="mb-1">お互いの診断結果から、性格においての主要な5つの要素「Big5」の一致度を割り出します</p>
       </div>
     </div>
   </header>
-  <main class="main">
-    <div class="user_input">
+  <main class="main container text-center">
+    <div class="user_input col-md-8 offset-md-2 pt-2 border rounded">
+    {% if error %}
+      <p class="error alert-danger rounded">{{error}}</p>
+    {% endif %}
       <form class="user_input__form" action="/result" method="post" name="userinputform">
-        <p>
-          あなたのTwitter ID: <input type="text" name="user_name">
-        </p>
-        <p>
-          相手のTwitter ID: <input type="text" name="target_name">
-        </p>
-        <p>
-          <input type="submit" value="診断する!">
-        </p>
+        <p class="mb-1"><label for="user_name">あなたのTwitter ID</label></p>
+        <p><input type="text" name="user_name" class="form-control text-center" id="user_name" placeholder="@を除いて入力"></p>
+        <p class="mb-1"><label for="target_name">相手のTwitter ID</label></p>
+        <p><input type="text" name="target_name" class="form-control text-center" id="target_name" placeholder="@を除いて入力"></p>
+        <p><input type="submit" value="診断する!" class="btn btn-primary"></p>
       </form>
     </div>
   </main>
+  <footer>
+    <script src="static/bootstrap.js"></script>
+  </footer>
 </body>
 </html>

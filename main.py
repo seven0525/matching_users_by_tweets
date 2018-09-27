@@ -5,7 +5,7 @@ import collections as cl
 import codecs
 from os import mkdir
 from os.path import join, dirname, abspath, exists
-from twitter import Twitter, OAuth
+from twitter import Twitter, OAuth, api
 from watson_developer_cloud import PersonalityInsightsV3
 from flask import Flask, render_template, redirect, request
 import config
@@ -99,7 +99,7 @@ def tweets_conv_json(tweets_list, user_name):
         tweets_json['contentItems'].append(data)
     with codecs.open(join(json_folder, get_file_name('tw', user_name)), 'w', 'utf-8') as fw:
         json.dump(tweets_json, fw, indent=4 ,ensure_ascii=False)
-    print(get_file_name('tw', user) + 'が生成されました')
+    print(get_file_name('tw', user_name) + 'が生成されました')
 
 # 生成したtweets.jsonをもとにWatsonAPI呼び出し
 def get_insights_analytics(user_name):
@@ -110,7 +110,7 @@ def get_insights_analytics(user_name):
             raw_scores=True,
             consumption_preferences=True
         )
-        with open(join(json_folder, get_file_name('an', user)), 'w') as fw:
+        with open(join(json_folder, get_file_name('an', user_name)), 'w') as fw:
             json.dump(profile, fw, indent=2)
         print(get_file_name('an', user_name) + 'が生成されました')
 
@@ -146,32 +146,37 @@ def get_diff_avg(data):
     return diff_avg
 
 # メイン処理
-@app.route('/')
+@app.route('/', methods=['GET'])
 def show_toppage():
-    return render_template('index.html')
+    return render_template('index.html',)
 
 @app.route('/result', methods=['GET', 'POST'])
 def show_result():
+    error = None
     # ユーザー定義
     users = []
     user_name = request.form['user_name']
     target_name = request.form['target_name']
-    if not user_name:
-        return redirect('/')
+    if not user_name or not target_name:
+        error = 'IDが未記入です。2つとも入力してください。'
+        return render_template('index.html', error=error)
 
     users.append(user_name)
     users.append(target_name)
-    print(users)
 
     #メイン処理
     big5 = {}
     for user in users:
-        if exists(join(json_folder, get_file_name('tw', user))) == False:
-            tweets = get_user_tweets(user)
-            tweets = get_shaped_tweets(tweets)
-            tweets_conv_json(tweets, user)
-        else:
-            print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
+        try:
+            if exists(join(json_folder, get_file_name('tw', user))) == False:
+                tweets = get_user_tweets(user)
+                tweets = get_shaped_tweets(tweets)
+                tweets_conv_json(tweets, user)
+            else:
+                print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
+        except (api.TwitterHTTPError):
+            error = 'ユーザーが見つかりませんでした。もう一度入力してください。'
+            return render_template('index.html', error=error)
 
         if exists(join(json_folder, get_file_name('an', user))) == False:
             get_insights_analytics(user)
@@ -185,14 +190,14 @@ def show_result():
 
     # グラフにデータを渡す
     labels = []
+    ja_labels = ['開放性', '真面目さ', '外向性', '協調性', '精神安定性']
     values = []
     for label, value in big5_diff_percent.items():
         labels.append(label)
         values.append(value)
 
     print(labels)
-    print(values)
-    return render_template('result.html', values=values, labels=labels, avg=big5_diff_avg)
+    return render_template('result.html', values=values, labels=ja_labels, avg=big5_diff_avg)
 
 if __name__ == "__main__":
     app.run(debug=True)

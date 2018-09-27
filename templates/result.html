@@ -5,60 +5,66 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <title>Page Title</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" type="text/css" href="styles.css" />
+  <link rel="stylesheet" type="text/css" href="static/bootstrap.css" />
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.js"></script>
 </head>
 
 <body>
-  <header class="header">
+  <header class="header container text-center">
     <div class="header__logo">
-      <a class="logo__link link" href="index.html">
-        <h1 class="logo__title"><i class="fab fa-twitter-square"></i> Twitter相性診断</h1>
-      </a>
+      <h1 class="logo__title">
+        <a class="logo__link link" href="/"><i class="fab fa-twitter-square"></i> Twitter相性診断</a>
+      </h1>
     </div>
   </header>
-  <main class="main">
-    <div class="result">
+  <main class="main container text-center">
+    <div class="result col-md-8 offset-md-2">
       <canvas class="result__graph" id="myChart" width="600" height="400"></canvas>
-      <p class="result__text text">総合的な性格適合度は<span class="text text--strong">{{avg}}%</span>です</p>
+      <p class="result__text mb-1">総合的な性格一致度は</p>
+      <p><strong class="display-4">{{avg}}%</strong>です</p>
     </div>
-    <a href="index.html" >トップに戻る</a>
+    <footer class="main__footer container text-center">
+      <a href="/" class="btn btn-primary" role="button">トップに戻る</a>
+    </footer>
   </main>
-  <script>
-    // bar chart data
-    var barData = {
-      labels: [
-        {% for item in labels %}
-          "{{item}}",
-        {% endfor %}
-      ],
-      datasets: [{
-        label: 'Sample',
-        backgroundColor: "rgba(255, 99, 132, 0.2)",
-        borderColor: "rgba(255, 99, 132, 1)",
-        data: [
-          {% for item in values %}
-            {{item}},
+  <footer>
+    <script src="static/bootstrap.js"></script>
+    <script src="static/Chart.js"></script>
+    <script>
+      // bar chart data
+      var barData = {
+        labels: [
+          {% for item in labels %}
+            "{{item}}",
           {% endfor %}
-        ]
-      }]
-    }
-    var mychart = document.getElementById("myChart");
-    new Chart(mychart, {
-      type: 'radar',
-      data: barData,
-      options: {
-        scale: {
-          ticks: {
-            stepSize: 10,
-            beginAtZero: true,
-            min: 0,
-            max: 100,
+        ],
+        datasets: [{
+          label: "一致度",
+          backgroundColor: "rgba(255, 99, 132, 0.2)",
+          borderColor: "rgba(255, 99, 132, 1)",
+          data: [
+            {% for item in values %}
+              {{item}},
+            {% endfor %}
+          ]
+        }]
+      }
+      var mychart = document.getElementById("myChart");
+      new Chart(mychart, {
+        type: 'radar',
+        data: barData,
+        options: {
+          scale: {
+            ticks: {
+              stepSize: 20,
+              beginAtZero: true,
+              min: 0,
+              max: 100,
+            }
           }
         }
-      }
-    });
-  </script>
+      });
+    </script>
+  </footer>
 </body>
 </html>
