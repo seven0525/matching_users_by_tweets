@@ -1,5 +1,6 @@
-config.py
+/config-sample.py
 __pycache__/
-.ipynb_checkpoints/
 tmp/
 .vscode/
+proto/
+vim.exe.stackdump
