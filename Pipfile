@@ -5,9 +5,9 @@ name = "pypi"
 
 [packages]
 twitter = "*"
-watson-developer-cloud = "*"
 flask = "*"
 gunicorn = "*"
+watson-developer-cloud = "==1.7.1"
 
 [dev-packages]
 

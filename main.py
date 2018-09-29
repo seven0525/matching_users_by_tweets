@@ -103,7 +103,7 @@ def tweets_conv_json(tweets_list, user_name):
 
 # 生成したtweets.jsonをもとにWatsonAPI呼び出し
 def get_insights_analytics(user_name):
-    with open(join(json_folder, get_file_name('tw', user_name)), encoding='utf-8_sig') as tweets_json:
+    with open(join(json_folder, get_file_name('tw', user_name)), 'r', encoding='utf-8_sig') as tweets_json:
         profile = personality_insights.profile(
             tweets_json.read(),
             content_type='application/json',
