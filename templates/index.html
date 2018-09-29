@@ -30,12 +30,20 @@
         <p><input type="text" name="user_name" class="form-control text-center" id="user_name" placeholder="@を除いて入力"></p>
         <p class="mb-1"><label for="target_name">相手のTwitter ID</label></p>
         <p><input type="text" name="target_name" class="form-control text-center" id="target_name" placeholder="@を除いて入力"></p>
-        <p><input type="submit" value="診断する!" class="btn btn-primary"></p>
+        <p><input type="submit" value="診断する!" class="btn btn-primary"><img style="display:none; width:auto; max-height:20px;" src="static/load.gif" class="ml-3"></p>
       </form>
     </div>
   </main>
   <footer>
     <script src="static/bootstrap.js"></script>
+    <script src="static/jquery-3.3.1.min.js"></script>
+    <script>
+      $(function() {
+        $('.btn-primary').click(function(){
+          $('img').fadeIn("fast");
+        });
+      });
+    </script>
   </footer>
 </body>
 </html>

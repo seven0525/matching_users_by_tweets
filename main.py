@@ -149,6 +149,11 @@ def get_diff_avg(data):
 # Flaskルーティング
 @app.route('/', methods=['GET'])
 def show_toppage():
+    # tmpディレクトリ消去
+    tmp_files = glob('tmp/*.json')
+    for file in tmp_files:
+        remove(file)
+
     return render_template('index.html',)
 
 @app.route('/result', methods=['GET', 'POST'])
@@ -186,11 +191,6 @@ def show_result():
     values = []
     for value in big5_diff_percent.values():
         values.append(value)
-
-    # tmpディレクトリ消去
-    tmp_files = glob('tmp/*.json')
-    for file in tmp_files:
-        remove(file)
 
     return render_template('result.html', values=values, labels=ja_labels, avg=big5_diff_avg)
 
