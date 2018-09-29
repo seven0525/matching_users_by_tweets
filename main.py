@@ -3,8 +3,9 @@
 import sys, json, re
 import collections as cl
 import codecs
-from os import mkdir
+from os import mkdir, remove
 from os.path import join, dirname, abspath, exists
+from glob import glob
 from twitter import Twitter, OAuth, api
 from watson_developer_cloud import PersonalityInsightsV3
 from flask import Flask, render_template, redirect, request
@@ -25,7 +26,7 @@ UN = config.get_username()
 PS = config.get_password()
 personality_insights = PersonalityInsightsV3(version='2017-10-13', username=UN, password=PS)
 
-# jsonファイル格納場所
+# json一時ファイル格納場所
 json_folder = join(dirname(abspath('__file__')), 'tmp/')
 if not exists(json_folder):
     mkdir(json_folder)
@@ -35,7 +36,7 @@ def get_file_name(type, user_name):
     if type == 'tw':
         return 'tweets-' + user_name + '.json'
     elif type == 'an':
-        return 'analyzed-' + user_name + 'json'
+        return 'analyzed-' + user_name + '.json'
     else:
         try:
             raise ValueError("ファイル形式は tw/an で指定してください")
@@ -87,7 +88,7 @@ def get_shaped_tweets(tweets_list):
         shaped_tweets.append(shape)
     return shaped_tweets
 
-# P.I.に突っ込む体裁を整えてjson形式"tweets.json"に
+# WatsonAPI呼び出し用にjson形式"tweets.json"に整形
 def tweets_conv_json(tweets_list, user_name):
     tweets_json = {}
     tweets_json['contentItems'] = []
@@ -114,7 +115,7 @@ def get_insights_analytics(user_name):
             json.dump(profile, fw, indent=2)
         print(get_file_name('an', user_name) + 'が生成されました')
 
-# big5のpercentileだけ抽出
+# big5のpercentile抽出
 def get_big5(user_name):
     with open(join(json_folder, get_file_name('an', user_name)), 'r') as analyzed_json:
         json_data = json.load(analyzed_json)
@@ -145,7 +146,7 @@ def get_diff_avg(data):
     diff_avg = round(sum / len(data))
     return diff_avg
 
-# メイン処理
+# Flaskルーティング
 @app.route('/', methods=['GET'])
 def show_toppage():
     return render_template('index.html',)
@@ -163,24 +164,17 @@ def show_result():
     users.append(user_name)
     users.append(target_name)
 
-    #メイン処理
+    # メイン処理
     big5 = {}
     for user in users:
         try:
-            if exists(join(json_folder, get_file_name('tw', user))) == False:
-                tweets = get_user_tweets(user)
-                tweets = get_shaped_tweets(tweets)
-                tweets_conv_json(tweets, user)
-            else:
-                print(get_file_name('tw', user) + 'が存在します。既存のファイルで処理を続行します。')
+            tweets = get_user_tweets(user)
+            tweets = get_shaped_tweets(tweets)
+            tweets_conv_json(tweets, user)
         except (api.TwitterHTTPError):
             error = 'ユーザーが見つかりませんでした。もう一度入力してください。'
             return render_template('index.html', error=error)
-
-        if exists(join(json_folder, get_file_name('an', user))) == False:
-            get_insights_analytics(user)
-        else:
-            print(get_file_name('an', user) + 'が存在します。既存のファイルで処理を続行します。')
+        get_insights_analytics(user)
         big5[user] = get_big5(user)
 
     big5_diff = get_big5_diff(big5, users)
@@ -188,14 +182,17 @@ def show_result():
     big5_diff_avg = get_diff_avg(big5_diff_percent)
 
     # グラフにデータを渡す
-    labels = []
     ja_labels = ['開放性', '真面目さ', '外向性', '協調性', '精神安定性']
     values = []
-    for label, value in big5_diff_percent.items():
-        labels.append(label)
+    for value in big5_diff_percent.values():
         values.append(value)
+
+    # tmpディレクトリ消去
+    tmp_files = glob('tmp/*.json')
+    for file in tmp_files:
+        remove(file)
 
     return render_template('result.html', values=values, labels=ja_labels, avg=big5_diff_avg)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
