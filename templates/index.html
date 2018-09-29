@@ -3,15 +3,15 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>test page</title>
+  <title>Twitter相性診断</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" type="text/css" href="static/bootstrap.css">
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.3.1/css/all.css" integrity="sha384-mzrmE5qonljUremFsqc01SB46JvROS7bZs3IO2EmfFsd15uHvIt+Y8vEf7N7fWAU" crossorigin="anonymous">
 </head>
 <body>
   <header class="header container text-center mb-3">
-    <div class="header__logo">
-      <h1 class="logo__title">
+    <div class="header__logo mt-3">
+      <h1 class="logo__title h2">
         <a class="logo__link link" href="/"><i class="fab fa-twitter-square"></i> Twitter相性診断</a>
       </h1>
       <div class="logo__text text-left text-md-center">
@@ -30,12 +30,20 @@
         <p><input type="text" name="user_name" class="form-control text-center" id="user_name" placeholder="@を除いて入力"></p>
         <p class="mb-1"><label for="target_name">相手のTwitter ID</label></p>
         <p><input type="text" name="target_name" class="form-control text-center" id="target_name" placeholder="@を除いて入力"></p>
-        <p><input type="submit" value="診断する!" class="btn btn-primary"></p>
+        <p><input type="submit" value="診断する!" class="btn btn-primary"><img style="display:none; width:auto; max-height:20px;" src="static/load.gif" class="ml-3"></p>
       </form>
     </div>
   </main>
   <footer>
     <script src="static/bootstrap.js"></script>
+    <script src="static/jquery-3.3.1.min.js"></script>
+    <script>
+      $(function() {
+        $('.btn-primary').click(function(){
+          $('img').fadeIn("fast");
+        });
+      });
+    </script>
   </footer>
 </body>
 </html>
