@@ -43,7 +43,7 @@ def get_file_name(type, user_name):
         except ValueError as e:
             print(e)
 
-# APIからツイートを取ってくる
+# TwitterAPIからツイートを取得
 def get_user_tweets(screen_name):
     number_of_tweets = 0
     count = 200
@@ -55,7 +55,7 @@ def get_user_tweets(screen_name):
         include_rts='false',
         tweet_mode='extended'
     )
-    # 取得件数500
+    # 最低500以上のツイートを取得
     while number_of_tweets <= 500:
         for tweet in a_timeline:
             number_of_tweets += 1
@@ -119,21 +119,21 @@ def get_insights_analytics(user_name):
 def get_big5(user_name):
     with open(join(json_folder, get_file_name('an', user_name)), 'r') as analyzed_json:
         json_data = json.load(analyzed_json)
-        big5 = {}
+        big5 = cl.OrderedDict()
         for data in json_data['personality']:
             big5[data['name']] = data['percentile']
     return big5
 
 # big5の差を取り出す
 def get_big5_diff(data, users_list):
-    diffs = {}
+    diffs = cl.OrderedDict()
     for status in data[users_list[0]].keys():
         diffs[status] = abs(data[users_list[0]][status] - data[users_list[1]][status])
     return diffs
 
 # big5の差をパーセンテージに変換
 def get_diff_percent(data):
-    diff_percents = {}
+    diff_percents = cl.OrderedDict()
     for status in data.keys():
         diff_percents[status] = round(100 - data[status] * 100)
     return diff_percents
